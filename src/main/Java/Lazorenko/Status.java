@@ -15,7 +15,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 public class Status implements Serializable {
 
     /**
-     * Singleton pattern implementation
+     * Singleton pattern implementation with loading from file
      */
     
     private volatile static Status singleton;
@@ -95,5 +95,22 @@ public class Status implements Serializable {
             forRet = new Status();
         }
         return forRet;
+    }
+
+    /**
+     * Response forming String
+     * @returns String object ready for response
+     */
+
+    @Override
+    public String toString() {
+        return "Status{" +
+                "requestsCounter=" + requestsCounter +
+                ", uniqueRequestsCounter=" + uniqueRequestsCounter +
+                ", log=" + log +
+                ", requests=" + requests +
+                ", redirects=" + redirects +
+                ", connections=" + connections +
+                '}';
     }
 }

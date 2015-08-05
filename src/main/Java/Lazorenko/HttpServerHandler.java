@@ -1,5 +1,6 @@
 package Lazorenko;
 
+import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
@@ -9,6 +10,9 @@ import io.netty.handler.codec.http.FullHttpResponse;
 import io.netty.handler.codec.http.HttpHeaders;
 import io.netty.handler.codec.http.HttpRequest;
 import org.apache.commons.validator.routines.UrlValidator;
+
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 
 import static io.netty.handler.codec.http.HttpHeaders.Names.*;
 import static io.netty.handler.codec.http.HttpResponseStatus.*;
@@ -23,6 +27,19 @@ import static io.netty.handler.codec.http.HttpVersion.HTTP_1_1;
 public class HttpServerHandler extends SimpleChannelInboundHandler<HttpRequest> {
 
     /**
+     * Calls {@link ChannelHandlerContext#fireChannelReadComplete()} to forward
+     * to the next {@link ChannelInboundHandler} in the {@link ChannelPipeline}.
+     * <p>
+     * Sub-classes may override this method to change behavior.
+     *
+     * @param ctx
+     */
+    @Override
+    public void channelReadComplete(ChannelHandlerContext ctx) throws Exception {
+        ctx.flush();
+    }
+
+    /**
      * <strong>Please keep in mind that this method will be renamed to
      * {@code messageReceived(ChannelHandlerContext, I)} in 5.0.</strong>
      * <p>
@@ -34,11 +51,12 @@ public class HttpServerHandler extends SimpleChannelInboundHandler<HttpRequest> 
      * @throws Exception is thrown if an error occurred
      */
 
+
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, HttpRequest msg) throws Exception {
 
         if (HttpHeaders.is100ContinueExpected(msg)) {
-            ctx.writeAndFlush(new DefaultFullHttpResponse(HTTP_1_1, CONTINUE));
+            ctx.write(new DefaultFullHttpResponse(HTTP_1_1, CONTINUE));
         }
 
         boolean keepAlive = HttpHeaders.isKeepAlive(msg);
@@ -51,10 +69,10 @@ public class HttpServerHandler extends SimpleChannelInboundHandler<HttpRequest> 
         FullHttpResponse response = createResponse(msg);
 
         if (!keepAlive) {
-            ctx.writeAndFlush(response).addListener(ChannelFutureListener.CLOSE);
+            ctx.write(response).addListener(ChannelFutureListener.CLOSE);
             } else {
                 response.headers().set(CONNECTION, HttpHeaders.Values.KEEP_ALIVE);
-                ctx.writeAndFlush(response);
+                ctx.write(response);
             }
     }
 
@@ -104,7 +122,7 @@ public class HttpServerHandler extends SimpleChannelInboundHandler<HttpRequest> 
                 if (urlValidator.isValid(url)) {
 
                    //Redirection block
-                    response = new DefaultFullHttpResponse(HTTP_1_1, MOVED_PERMANENTLY);
+                    response = new DefaultFullHttpResponse(HTTP_1_1, TEMPORARY_REDIRECT);
                     response.headers().set(LOCATION, url);
                     response.headers().set(CONTENT_LENGTH, response.content().readableBytes());
                 } else {
@@ -116,8 +134,12 @@ public class HttpServerHandler extends SimpleChannelInboundHandler<HttpRequest> 
                 break;
 
             case 3:
-
-                response = new DefaultFullHttpResponse(HTTP_1_1, CONTINUE);
+                Status status = Status.getInstance();
+                String responseString = status.toString();
+                response = new DefaultFullHttpResponse(HTTP_1_1, OK,
+                        Unpooled.copiedBuffer(responseString, StandardCharsets.UTF_8));
+                response.headers().set(CONTENT_TYPE, "text/plain");
+                response.headers().set(CONTENT_LENGTH, response.content().readableBytes());
                 break;
 
             default:
