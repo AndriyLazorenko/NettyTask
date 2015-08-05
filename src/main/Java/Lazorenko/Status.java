@@ -45,11 +45,21 @@ public class Status implements Serializable {
     private int connections = 0;
     private Queue<ConnectionData> log = new LinkedBlockingQueue<>();
 
+    /**
+     * Method for updating Status object
+     * @param ctx - ChannelHandlerContext object
+     * @param msg - HttpRequest object
+     */
+
     public void update(ChannelHandlerContext ctx, HttpRequest msg){
         requestsCounter++;
         Requests req = new Requests(ctx.channel().remoteAddress().toString());
         toFile();
     }
+
+    /**
+     * Method for storing data present in Status object in a file
+     */
 
     private void toFile(){
         File storage = new File("src/main/resources/Output.data");
@@ -63,6 +73,11 @@ public class Status implements Serializable {
             e.printStackTrace();
         }
     }
+
+    /**
+     * Method for loading serialized data of Status object back to the status object
+     * @returns Status object
+     */
 
     private static Status fromFile(){
         File storage = new File("src/main/resources/Output.data");
