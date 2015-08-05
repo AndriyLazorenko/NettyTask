@@ -58,4 +58,17 @@ public class Requests {
             return false;
         }
     }
+
+    /**
+     * Setters
+     * @param requestsOnIp
+     */
+
+    public void setRequestsOnIp(int requestsOnIp) {
+        this.requestsOnIp = requestsOnIp;
+    }
+
+    public void setLastRequestTime(Date lastRequestTime) {
+        this.lastRequestTime = lastRequestTime;
+    }
 }

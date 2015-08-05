@@ -1,6 +1,5 @@
 package Lazorenko;
 
-import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
@@ -10,8 +9,6 @@ import io.netty.handler.codec.http.FullHttpResponse;
 import io.netty.handler.codec.http.HttpHeaders;
 import io.netty.handler.codec.http.HttpRequest;
 import org.apache.commons.validator.routines.UrlValidator;
-
-import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 
 import static io.netty.handler.codec.http.HttpHeaders.Names.*;
@@ -88,13 +85,13 @@ public class HttpServerHandler extends SimpleChannelInboundHandler<HttpRequest> 
         //Variables block
         String uri = req.getUri();
         FullHttpResponse response;
-        byte[] CONTENT;
 
         //Creation of scenarios depending on input
         int scenario = 0;
         if (uri.equals("/hello")) scenario = 1;
         else if (uri.contains("/redirect?url=")) scenario = 2;
         else if (uri.equals("/status")) scenario = 3;
+
         switch (scenario) {
 
             case 1:
@@ -104,7 +101,7 @@ public class HttpServerHandler extends SimpleChannelInboundHandler<HttpRequest> 
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
-                CONTENT = new byte[]{ 'H', 'e', 'l', 'l', 'o', ' ', 'W', 'o', 'r', 'l', 'd' };
+                byte[] CONTENT = new byte[]{ 'H', 'e', 'l', 'l', 'o', ' ', 'W', 'o', 'r', 'l', 'd' };
                 response = new DefaultFullHttpResponse(HTTP_1_1, OK, Unpooled.wrappedBuffer(CONTENT));
                 response.headers().set(CONTENT_TYPE, "text/plain");
                 response.headers().set(CONTENT_LENGTH, response.content().readableBytes());
@@ -134,8 +131,8 @@ public class HttpServerHandler extends SimpleChannelInboundHandler<HttpRequest> 
                 break;
 
             case 3:
-                Status status = Status.getInstance();
-                String responseString = status.toString();
+
+                String responseString = Status.getInstance().toString();
                 response = new DefaultFullHttpResponse(HTTP_1_1, OK,
                         Unpooled.copiedBuffer(responseString, StandardCharsets.UTF_8));
                 response.headers().set(CONTENT_TYPE, "text/plain");

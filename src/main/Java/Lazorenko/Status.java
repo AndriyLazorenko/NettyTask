@@ -40,7 +40,7 @@ public class Status implements Serializable {
 
     private int requestsCounter = 0;
     private int uniqueRequestsCounter = 0;
-    private Set<Requests> requests = new HashSet<>();
+    private Set<Requests> requestsData = new HashSet<>();
     private Map<String,Integer> redirects = new HashMap<>();
     private int connections = 0;
     private Queue<ConnectionData> log = new LinkedBlockingQueue<>();
@@ -53,8 +53,50 @@ public class Status implements Serializable {
 
     public void update(ChannelHandlerContext ctx, HttpRequest msg){
         requestsCounter++;
-        Requests req = new Requests(ctx.channel().remoteAddress().toString());
+        requestsDataAdd(new Requests(ctx.channel().remoteAddress().toString()));
+        uniqueRequestsCounter = requestsData.size();
+        redirectsCounting(msg);
         toFile();
+    }
+
+    /**
+     * Processes a request according to uniqueness of IP
+     * @param req - Requests object
+     */
+
+    private void requestsDataAdd(Requests req){
+        System.out.println(req.getIp());
+        boolean hasReq = false;
+        for (Requests r : requestsData) {
+            if (r.equals(req)){
+                hasReq = true;
+                r.setLastRequestTime(new Date());
+                r.setRequestsOnIp(r.getRequestsOnIp()+1);
+                break;
+            }
+        }
+        if (!hasReq){
+            requestsData.add(req);
+        }
+    }
+
+    /**
+     * Processes a request according to uniqueness of redirected URL's
+     * @param req - HttpRequest object
+     */
+
+    private void redirectsCounting (HttpRequest req){
+        if (req.getUri().contains("/redirect?url=")){
+            String modifiedUri = req.getUri().replaceAll("%3C","<").replaceAll("%3E", ">");
+            String url = modifiedUri.substring(modifiedUri.indexOf("<")+1,modifiedUri.lastIndexOf(">"));
+            if(redirects.keySet().contains(url)){
+                int counter = redirects.get(url);
+                redirects.replace(url,counter++);
+            }
+            else {
+                redirects.put(url,1);
+            }
+        }
     }
 
     /**
@@ -92,6 +134,7 @@ public class Status implements Serializable {
             e.printStackTrace();
         }
         if (forRet==null){
+            System.err.print("Status object created");
             forRet = new Status();
         }
         return forRet;
@@ -105,12 +148,12 @@ public class Status implements Serializable {
     @Override
     public String toString() {
         return "Status{" +
-                "requestsCounter=" + requestsCounter +
-                ", uniqueRequestsCounter=" + uniqueRequestsCounter +
-                ", log=" + log +
-                ", requests=" + requests +
-                ", redirects=" + redirects +
-                ", connections=" + connections +
-                '}';
+                "\n"+"requestsCounter=" + requestsCounter +
+                "\n"+", uniqueRequestsCounter=" + uniqueRequestsCounter +
+                "\n"+", log=" + log +
+                "\n"+", requestsData=" + requestsData +
+                "\n"+", redirects=" + redirects +
+                "\n"+", connections=" + connections +
+                "\n"+'}';
     }
 }
