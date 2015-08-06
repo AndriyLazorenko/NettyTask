@@ -2,10 +2,13 @@ package Lazorenko;
 
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.http.HttpRequest;
+import io.netty.handler.codec.http.HttpResponse;
 
 import java.io.*;
 import java.util.*;
 import java.util.concurrent.LinkedBlockingQueue;
+
+import static io.netty.handler.codec.http.HttpHeaders.Names.CONTENT_LENGTH;
 
 /**
  * Container class for handling data related to status request from server as mentioned in task
@@ -51,35 +54,40 @@ public class Status implements Serializable {
      * @param msg - HttpRequest object
      */
 
-    public void update(ChannelHandlerContext ctx, HttpRequest msg){
+    public void update(ChannelHandlerContext ctx, HttpRequest msg, HttpResponse resp){
         requestsCounter++;
-        requestsDataAdd(new Requests(extractIp(ctx.channel().remoteAddress().toString())));
+        Requests currentReq = requestsDataAdd(
+                new Requests(extractIp(ctx.channel().remoteAddress().toString())));
         uniqueRequestsCounter = requestsData.size();
         redirectsCounting(msg);
         getNumberOfConnections();
-        //TODO
-        connectionDataAdd();
+        connectionDataAdd(currentReq, msg, resp);
         toFile();
     }
 
     /**
      * Processes a request according to uniqueness of IP
      * @param req - Requests object
+     * @return Requests object with current request
      */
 
-    private void requestsDataAdd(Requests req){
+    private Requests requestsDataAdd(Requests req){
+        Requests forRet = null;
         boolean hasReq = false;
         for (Requests r : requestsData) {
             if (r.equals(req)){
                 hasReq = true;
                 r.setLastRequestTime(new Date());
                 r.setRequestsOnIp(r.getRequestsOnIp()+1);
+                forRet = r;
                 break;
             }
         }
         if (!hasReq){
             requestsData.add(req);
+            forRet = req;
         }
+        return forRet;
     }
 
     /**
@@ -115,9 +123,28 @@ public class Status implements Serializable {
         }
     }
 
-    //TODO
-    private void connectionDataAdd(){
-        ConnectionData newData = new ConnectionData();
+    /**
+     * Processes the data for representation in required format (through queue of last 16 connections)
+     * @param currentReq - Requests object formed from incoming ChannelHandlerContext object
+     * @param msg - HttpRequests object
+     * @param resp - HttpResponse object
+     */
+
+    private void connectionDataAdd(Requests currentReq, HttpRequest msg, HttpResponse resp){
+        String ip = currentReq.getIp();
+        String URI = msg.getUri();
+        long bytesSent = Long.parseLong(resp.headers().get(CONTENT_LENGTH));
+        long bytesReceived;
+        try {
+            bytesReceived = Long.parseLong(msg.headers().get(CONTENT_LENGTH));
+        } catch (NumberFormatException e){
+            bytesReceived=0;
+        }
+        ConnectionData newData = new ConnectionData(ip,URI,bytesSent,bytesReceived);
+        log.offer(newData);
+        if (log.size()>16){
+            log.poll();
+        }
     }
 
     /**
@@ -171,9 +198,9 @@ public class Status implements Serializable {
         return "Status{" +
                 "\n"+"requestsCounter=" + requestsCounter +
                 "\n"+", uniqueRequestsCounter=" + uniqueRequestsCounter +
-                "\n"+", log=" + log +
-                "\n"+", requestsData=" + requestsData +
-                "\n"+", redirects=" + redirects +
+                "\n"+", log=" + log.toString() +
+                "\n"+", requestsData=" + requestsData.toString() +
+                "\n"+", redirects=" + redirects.toString() +
                 "\n"+", connections=" + connections +
                 "\n"+'}';
     }

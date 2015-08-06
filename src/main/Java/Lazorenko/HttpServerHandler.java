@@ -1,5 +1,6 @@
 package Lazorenko;
 
+import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
@@ -58,12 +59,10 @@ public class HttpServerHandler extends SimpleChannelInboundHandler<HttpRequest> 
 
         boolean keepAlive = HttpHeaders.isKeepAlive(msg);
 
-        System.out.println(ctx.channel().remoteAddress().toString());
+        FullHttpResponse response = createResponse(msg);
 
         Status status = Status.getInstance();
-        status.update(ctx,msg);
-
-        FullHttpResponse response = createResponse(msg);
+        status.update(ctx,msg,response);
 
         if (!keepAlive) {
             ctx.write(response).addListener(ChannelFutureListener.CLOSE);
@@ -143,7 +142,6 @@ public class HttpServerHandler extends SimpleChannelInboundHandler<HttpRequest> 
                 response = new DefaultFullHttpResponse(HTTP_1_1, CONTINUE);
         }
 
-        //System.out.println(uri);
         return response;
     }
 }

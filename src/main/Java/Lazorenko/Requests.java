@@ -1,6 +1,7 @@
 package Lazorenko;
 
 import java.io.Serializable;
+import java.text.SimpleDateFormat;
 import java.util.Date;
 
 /**
@@ -72,4 +73,33 @@ public class Requests implements Serializable {
     public void setLastRequestTime(Date lastRequestTime) {
         this.lastRequestTime = lastRequestTime;
     }
+
+    /**
+     * Overrides toString() for better data representation
+     * @return String object with all data off this Request object fields
+     */
+
+    @Override
+    public String toString() {
+        return "Requests{" +
+              "\t" + "ip='" + ip + '\'' +
+              "\t" + ", requestsOnIp=" + requestsOnIp +
+              "\t" + ", lastRequestTime=" + dateFormatter(lastRequestTime) +
+                '}' + "\n";
+    }
+
+    /**
+     * Formats date into readable String
+     * @param date - Date object
+     * @return String representation of Date object
+     */
+
+    private String dateFormatter(Date date){
+        String forRet;
+        SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/y HH:mm:ss");
+        forRet = sdf.format(date);
+        return forRet;
+    }
+
+
 }
