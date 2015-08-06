@@ -2,9 +2,13 @@ package Lazorenko;
 
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelPipeline;
+import io.netty.channel.group.ChannelGroup;
+import io.netty.channel.group.DefaultChannelGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.handler.codec.http.HttpServerCodec;
 import io.netty.handler.ssl.SslContext;
+import io.netty.util.concurrent.DefaultEventExecutorGroup;
+import io.netty.util.concurrent.EventExecutorGroup;
 
 /**
  * Initializer class for HttpServer class. Handles overriding of the initChannel method.
@@ -15,6 +19,8 @@ import io.netty.handler.ssl.SslContext;
 public class HttpServerInitializer extends ChannelInitializer<SocketChannel> {
 
     private final SslContext sslCtx;
+    private static EventExecutorGroup executor = new DefaultEventExecutorGroup(1);
+    public static ChannelGroup channels = new DefaultChannelGroup(executor.next());
 
     public HttpServerInitializer(SslContext sslCtx) {
         this.sslCtx = sslCtx;
@@ -27,7 +33,8 @@ public class HttpServerInitializer extends ChannelInitializer<SocketChannel> {
             p.addLast(sslCtx.newHandler(ch.alloc()));
         }
         p.addLast(new HttpServerCodec());
-        p.addLast(new HttpServerHandler());
+        p.addLast(executor,new HttpServerHandler());
+        channels.add(ch);
     }
 
 }

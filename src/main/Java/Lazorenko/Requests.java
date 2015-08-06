@@ -1,12 +1,13 @@
 package Lazorenko;
 
+import java.io.Serializable;
 import java.util.Date;
 
 /**
  * Class that serves as a request counter
  * @author andriylazorenko
  */
-public class Requests {
+public class Requests implements Serializable {
 
     /**
      * Variables

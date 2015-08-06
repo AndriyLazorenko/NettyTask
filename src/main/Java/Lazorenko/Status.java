@@ -53,9 +53,12 @@ public class Status implements Serializable {
 
     public void update(ChannelHandlerContext ctx, HttpRequest msg){
         requestsCounter++;
-        requestsDataAdd(new Requests(ctx.channel().remoteAddress().toString()));
+        requestsDataAdd(new Requests(extractIp(ctx.channel().remoteAddress().toString())));
         uniqueRequestsCounter = requestsData.size();
         redirectsCounting(msg);
+        getNumberOfConnections();
+        //TODO
+        connectionDataAdd();
         toFile();
     }
 
@@ -65,7 +68,6 @@ public class Status implements Serializable {
      */
 
     private void requestsDataAdd(Requests req){
-        System.out.println(req.getIp());
         boolean hasReq = false;
         for (Requests r : requestsData) {
             if (r.equals(req)){
@@ -78,6 +80,20 @@ public class Status implements Serializable {
         if (!hasReq){
             requestsData.add(req);
         }
+    }
+
+    /**
+     * Extracts IP form String value of remoteAddress method
+     * @param remoteAddress - remoteAddress method of chanel
+     * @returns IP in form of String
+     */
+
+    private String extractIp (String remoteAddress){
+        StringBuilder sb = new StringBuilder();
+        sb.append(remoteAddress.substring(1));
+        String forRet = sb.substring(0,sb.indexOf(":"));
+        System.out.println(forRet);
+        return forRet;
     }
 
     /**
@@ -97,6 +113,11 @@ public class Status implements Serializable {
                 redirects.put(url,1);
             }
         }
+    }
+
+    //TODO
+    private void connectionDataAdd(){
+        ConnectionData newData = new ConnectionData();
     }
 
     /**
@@ -156,4 +177,13 @@ public class Status implements Serializable {
                 "\n"+", connections=" + connections +
                 "\n"+'}';
     }
+
+    /**
+     * Updates variable <code>connections</code> with data on current number of connections
+     */
+
+    private void getNumberOfConnections (){
+        connections=HttpServerInitializer.channels.size();
+    }
+
 }
