@@ -1,6 +1,5 @@
 package Lazorenko;
 
-import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
@@ -25,19 +24,6 @@ import static io.netty.handler.codec.http.HttpVersion.HTTP_1_1;
 public class HttpServerHandler extends SimpleChannelInboundHandler<HttpRequest> {
 
     /**
-     * Calls {@link ChannelHandlerContext#fireChannelReadComplete()} to forward
-     * to the next {@link ChannelInboundHandler} in the {@link ChannelPipeline}.
-     * <p>
-     * Sub-classes may override this method to change behavior.
-     *
-     * @param ctx
-     */
-    @Override
-    public void channelReadComplete(ChannelHandlerContext ctx) throws Exception {
-        ctx.flush();
-    }
-
-    /**
      * <strong>Please keep in mind that this method will be renamed to
      * {@code messageReceived(ChannelHandlerContext, I)} in 5.0.</strong>
      * <p>
@@ -53,6 +39,8 @@ public class HttpServerHandler extends SimpleChannelInboundHandler<HttpRequest> 
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, HttpRequest msg) throws Exception {
 
+        long startTransfer = System.nanoTime();
+
         if (HttpHeaders.is100ContinueExpected(msg)) {
             ctx.write(new DefaultFullHttpResponse(HTTP_1_1, CONTINUE));
         }
@@ -61,22 +49,25 @@ public class HttpServerHandler extends SimpleChannelInboundHandler<HttpRequest> 
 
         FullHttpResponse response = createResponse(msg);
 
-        Status status = Status.getInstance();
-        status.update(ctx,msg,response);
-
         if (!keepAlive) {
             ctx.write(response).addListener(ChannelFutureListener.CLOSE);
             } else {
                 response.headers().set(CONNECTION, HttpHeaders.Values.KEEP_ALIVE);
-                ctx.write(response);
+                ctx.writeAndFlush(response);
             }
+
+        long endTransfer = System.nanoTime();
+        long timeInterval = endTransfer-startTransfer;
+
+        Status status = Status.getInstance();
+        status.update(ctx,msg,response,timeInterval);
     }
 
     /**
      * Class responsible for performing the tasks given by Hamstercoders and, specifically,
      * creating responses with respect to server requests. A simple protocol in fact
-     * @param req - HttpRequest object received by netty
-     * @return response - FullHttpResponse object ready for deployment on server
+     * @param req - <code>HttpRequest</code> object received by netty
+     * @return response - <code>FullHttpResponse</code> object ready for deployment on server
      */
 
     private FullHttpResponse createResponse (HttpRequest req){
@@ -108,6 +99,7 @@ public class HttpServerHandler extends SimpleChannelInboundHandler<HttpRequest> 
 
             case 2:
 
+                //Statistics might be bugged because of auto-redirect in Chromium browser.
                 //Input modification
                 String modifiedUri = uri.replaceAll("%3C","<").replaceAll("%3E", ">");
                 String url = modifiedUri.substring(modifiedUri.indexOf("<")+1,modifiedUri.lastIndexOf(">"));

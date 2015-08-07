@@ -19,12 +19,16 @@ import io.netty.handler.ssl.util.SelfSignedCertificate;
 
 public final class HttpServer {
 
+    /**
+     * Variables
+     */
+
     static final boolean SSL = System.getProperty("ssl") != null;
     static final int PORT = Integer.parseInt(System.getProperty("port", SSL? "8443" : "8082"));
 
     public static void main(String[] args) throws Exception {
 
-        // Configure SSL.
+        // Block to configure SSL
         final SslContext sslCtx;
         if (SSL) {
             SelfSignedCertificate ssc = new SelfSignedCertificate();
@@ -33,7 +37,7 @@ public final class HttpServer {
             sslCtx = null;
         }
 
-        // Configure the server.
+        // Block to configure the server
         EventLoopGroup bossGroup = new NioEventLoopGroup(1);
         EventLoopGroup workerGroup = new NioEventLoopGroup();
         try {

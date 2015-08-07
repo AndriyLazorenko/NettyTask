@@ -1,6 +1,8 @@
 package Lazorenko;
 
 import java.io.Serializable;
+import java.text.DecimalFormat;
+import java.text.NumberFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
@@ -27,18 +29,22 @@ public class ConnectionData implements Serializable{
      * @param URI - URI in form of String
      * @param sent_bytes - bytes sent (long)
      * @param received_bytes - bytes received (long)
+     * @param timeDifference - time difference in between block of code responsible for sending data to server
+     *                       (long)
      */
 
-    public ConnectionData(String src_ip, String URI, long sent_bytes, long received_bytes) {
+    public ConnectionData(String src_ip, String URI, long sent_bytes, long received_bytes,
+                          long timeDifference) {
         this.src_ip = src_ip;
         this.URI = URI;
         this.timestamp = new Date();
         this.sent_bytes = sent_bytes;
         this.received_bytes = received_bytes;
+        this.speed = ((double) sent_bytes) / ((double) timeDifference / 1000000000);
     }
 
     /**
-     * Overrides toString() for better data representation
+     * Overrides <code>toString()</code> for better data representation
      * @return String object with data
      */
 
@@ -50,12 +56,12 @@ public class ConnectionData implements Serializable{
               "\t" + ", timestamp=" + dateFormatter(timestamp) +
               "\t" + ", sent_bytes=" + sent_bytes +
               "\t" + ", received_bytes=" + received_bytes +
-              "\t" + ", speed=" + speed +
+              "\t" + ", speed (bytes/sec)=" + doubleFormatter(speed) +
                 '}' +"\n";
     }
 
     /**
-     * Formats date into readable String
+     * Formats <code>Date</code> object into readable String
      * @param date - Date object
      * @return String representation of Date object
      */
@@ -64,6 +70,18 @@ public class ConnectionData implements Serializable{
         String forRet;
         SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/y HH:mm:ss");
         forRet = sdf.format(date);
+        return forRet;
+    }
+
+    /**
+     * Formats double for better view
+     * @param d - double input variable
+     * @return String object - formatted double
+     */
+
+    public String doubleFormatter(double d) {
+        NumberFormat formatter = new DecimalFormat("#0");
+        String forRet = formatter.format(d);
         return forRet;
     }
 

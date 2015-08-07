@@ -52,16 +52,18 @@ public class Status implements Serializable {
      * Method for updating Status object
      * @param ctx - ChannelHandlerContext object
      * @param msg - HttpRequest object
+     * @param resp - Response object formed on server
+     * @param timeDifference - Long type object with time taken to communicate with client with server's Response
      */
 
-    public void update(ChannelHandlerContext ctx, HttpRequest msg, HttpResponse resp){
+    public void update(ChannelHandlerContext ctx, HttpRequest msg, HttpResponse resp, long timeDifference){
         requestsCounter++;
         Requests currentReq = requestsDataAdd(
                 new Requests(extractIp(ctx.channel().remoteAddress().toString())));
         uniqueRequestsCounter = requestsData.size();
         redirectsCounting(msg);
         getNumberOfConnections();
-        connectionDataAdd(currentReq, msg, resp);
+        connectionDataAdd(currentReq, msg, resp, timeDifference);
         toFile();
     }
 
@@ -100,7 +102,6 @@ public class Status implements Serializable {
         StringBuilder sb = new StringBuilder();
         sb.append(remoteAddress.substring(1));
         String forRet = sb.substring(0,sb.indexOf(":"));
-        System.out.println(forRet);
         return forRet;
     }
 
@@ -128,9 +129,10 @@ public class Status implements Serializable {
      * @param currentReq - Requests object formed from incoming ChannelHandlerContext object
      * @param msg - HttpRequests object
      * @param resp - HttpResponse object
+     * @param timeDifference
      */
 
-    private void connectionDataAdd(Requests currentReq, HttpRequest msg, HttpResponse resp){
+    private void connectionDataAdd(Requests currentReq, HttpRequest msg, HttpResponse resp, long timeDifference){
         String ip = currentReq.getIp();
         String URI = msg.getUri();
         long bytesSent = Long.parseLong(resp.headers().get(CONTENT_LENGTH));
@@ -140,7 +142,7 @@ public class Status implements Serializable {
         } catch (NumberFormatException e){
             bytesReceived=0;
         }
-        ConnectionData newData = new ConnectionData(ip,URI,bytesSent,bytesReceived);
+        ConnectionData newData = new ConnectionData(ip,URI,bytesSent,bytesReceived, timeDifference);
         log.offer(newData);
         if (log.size()>16){
             log.poll();
